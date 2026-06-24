@@ -42,7 +42,10 @@ exports.createBooking = async (req, res) => {
     paymentStatus: 'Paid',
   })
 
-  const populated = await booking.populate('car user', 'name brand images pricePerDay category name email')
+  const populated = await booking.populate([
+    { path: 'car', select: 'name brand images pricePerDay category' },
+    { path: 'user', select: 'name email' },
+  ])
 
   res.status(201).json({ success: true, booking: populated })
 }

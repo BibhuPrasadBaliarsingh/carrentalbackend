@@ -1,3 +1,4 @@
+const crypto = require('crypto')
 const User = require('../models/User')
 
 // Helper: send token response
@@ -99,5 +100,28 @@ exports.changePassword = async (req, res) => {
   user.password = newPassword
   await user.save()
 
+  sendToken(user, 200, res)
+}
+
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body
+  if (!email) return res.status(400).json({ success: false, message: 'Please provide an email' })
+  const user = await User.findOne({ email })
+  if (!user) return res.status(200).json({ success: true, message: 'If an account exists for that email, a reset link has been generated.' })
+  const resetToken = user.getResetPasswordToken()
+  await user.save({ validateBeforeSave: false })
+  res.status(200).json({ success: true, message: 'If an account exists for that email, a reset link has been generated.', resetToken })
+}
+
+exports.resetPassword = async (req, res) => {
+  const { password } = req.body
+  if (!password || password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' })
+  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex')
+  const user = await User.findOne({ resetPasswordToken: hashedToken, resetPasswordExpire: { $gt: Date.now() } })
+  if (!user) return res.status(400).json({ success: false, message: 'Reset link is invalid or has expired' })
+  user.password = password
+  user.resetPasswordToken = undefined
+  user.resetPasswordExpire = undefined
+  await user.save()
   sendToken(user, 200, res)
 }

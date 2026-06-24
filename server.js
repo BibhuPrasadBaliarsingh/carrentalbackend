@@ -15,6 +15,7 @@ const carRoutes = require('./routes/cars')
 const bookingRoutes = require('./routes/bookings')
 const dashboardRoutes = require('./routes/dashboard')
 const userRoutes = require('./routes/users')
+const siteRoutes = require('./routes/site')
 
 // Connect to database
 connectDB()
@@ -43,6 +44,7 @@ app.use('/api/cars', carRoutes)
 app.use('/api/bookings', bookingRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api', siteRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
