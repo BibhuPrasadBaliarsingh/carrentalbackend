@@ -28,13 +28,24 @@ exports.getSettings = async (req, res) => {
   res.status(200).json({ success: true, settings })
 }
 
+exports.getFilterOptions = async (req, res) => {
+  const settings = await Settings.getSingleton()
+  res.status(200).json({
+    success: true,
+    brands: settings.brands || [],
+    categories: settings.categories || [],
+  })
+}
+
 exports.updateSettings = async (req, res) => {
-  const { platformName, supportEmail, currency, taxRate } = req.body
+  const { platformName, supportEmail, currency, taxRate, brands, categories } = req.body
   const settings = await Settings.getSingleton()
   if (platformName !== undefined) settings.platformName = platformName
   if (supportEmail !== undefined) settings.supportEmail = supportEmail
   if (currency !== undefined) settings.currency = currency
   if (taxRate !== undefined) settings.taxRate = taxRate
+  if (brands !== undefined && Array.isArray(brands)) settings.brands = brands.filter(Boolean)
+  if (categories !== undefined && Array.isArray(categories)) settings.categories = categories.filter(Boolean)
   await settings.save()
   res.status(200).json({ success: true, settings })
 }

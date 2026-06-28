@@ -5,6 +5,14 @@ const SettingsSchema = new mongoose.Schema({
   supportEmail: { type: String, default: 'support@speedtoyz.com' },
   currency: { type: String, default: 'INR (₹)' },
   taxRate: { type: Number, default: 8 },
+  brands: {
+    type: [String],
+    default: ['Ferrari', 'Mercedes', 'Land Rover', 'Porsche', 'BMW', 'Tesla', 'Lamborghini', 'Audi', 'McLaren'],
+  },
+  categories: {
+    type: [String],
+    default: ['Sports', 'Luxury', 'SUV', 'Electric', 'Supercar', 'Convertible', 'Sedan'],
+  },
 }, { timestamps: true })
 
 SettingsSchema.statics.getSingleton = async function () {
