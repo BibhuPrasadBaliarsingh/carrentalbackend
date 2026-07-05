@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking')
 const Car = require('../models/Car')
+const Settings = require('../models/Settings')
 
 // @desc    Create booking
 // @route   POST /api/bookings
@@ -24,7 +25,22 @@ exports.createBooking = async (req, res) => {
 
   const totalDays = Math.ceil((returnD - pickup) / (1000 * 60 * 60 * 24))
   const insuranceFee = includesInsurance ? 50 * totalDays : 0
-  const totalPrice = car.pricePerDay * totalDays + insuranceFee
+  const settings = await Settings.getSingleton()
+  const taxRate = Number(settings.taxRate || 8) / 100
+  const subtotal = car.pricePerDay * totalDays + insuranceFee
+  const taxAmount = Math.round(subtotal * taxRate * 100) / 100
+  const totalPrice = subtotal + taxAmount
+
+  const overlappingBooking = await Booking.findOne({
+    car: carId,
+    bookingStatus: { $nin: ['Cancelled'] },
+    pickupDate: { $lt: returnD },
+    returnDate: { $gt: pickup },
+  })
+
+  if (overlappingBooking) {
+    return res.status(400).json({ success: false, message: 'This car is already booked for the selected dates.' })
+  }
 
   const booking = await Booking.create({
     user: req.user.id,
@@ -35,6 +51,7 @@ exports.createBooking = async (req, res) => {
     totalDays,
     pricePerDay: car.pricePerDay,
     insuranceFee,
+    taxAmount,
     totalPrice,
     includesInsurance: !!includesInsurance,
     paymentMethod: paymentMethod || 'Credit Card',
@@ -47,7 +64,7 @@ exports.createBooking = async (req, res) => {
     { path: 'user', select: 'name email' },
   ])
 
-  res.status(201).json({ success: true, booking: populated })
+  res.status(201).json({ success: true, booking: populated, taxAmount, taxRate })
 }
 
 // @desc    Get my bookings
@@ -118,7 +135,7 @@ exports.updateBookingStatus = async (req, res) => {
   const booking = await Booking.findByIdAndUpdate(
     req.params.id,
     { bookingStatus: status },
-    { new: true }
+    { new: true, runValidators: true }
   ).populate('car user')
 
   if (!booking) {

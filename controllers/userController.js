@@ -68,7 +68,7 @@ exports.updateRole = async (req, res) => {
   if (!['user', 'admin'].includes(role)) {
     return res.status(400).json({ success: false, message: 'Invalid role' })
   }
-  const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true })
+  const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true, runValidators: true })
   if (!user) return res.status(404).json({ success: false, message: 'User not found' })
   res.status(200).json({ success: true, user })
 }

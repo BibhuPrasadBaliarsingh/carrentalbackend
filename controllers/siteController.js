@@ -28,6 +28,19 @@ exports.getSettings = async (req, res) => {
   res.status(200).json({ success: true, settings })
 }
 
+exports.getPublicSettings = async (req, res) => {
+  const settings = await Settings.getSingleton()
+  res.status(200).json({
+    success: true,
+    settings: {
+      platformName: settings.platformName,
+      supportEmail: settings.supportEmail,
+      currency: settings.currency,
+      taxRate: settings.taxRate,
+    },
+  })
+}
+
 exports.getFilterOptions = async (req, res) => {
   const settings = await Settings.getSingleton()
   res.status(200).json({
