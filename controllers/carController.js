@@ -83,10 +83,11 @@ exports.updateCar = async (req, res) => {
 
   const updateData = { ...req.body }
 
-  // If new images uploaded, append them
+  // If new images uploaded, replace the old ones
+  // If no images uploaded, keep the existing ones
   if (req.files && req.files.length > 0) {
     const newImages = req.files.map(f => f.filename)
-    updateData.images = [...car.images, ...newImages]
+    updateData.images = newImages
   }
 
   car = await Car.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true })
