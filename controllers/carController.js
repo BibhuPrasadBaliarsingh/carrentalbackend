@@ -1,4 +1,5 @@
 const Car = require('../models/Car')
+const Booking = require('../models/Booking')
 const path = require('path')
 const fs = require('fs')
 
@@ -8,7 +9,7 @@ const fs = require('fs')
 exports.getCars = async (req, res) => {
   const {
     search, brand, category, fuelType, transmission,
-    minPrice, maxPrice, available,
+    minPrice, maxPrice, available, pickupDate, returnDate,
     sort = '-createdAt', page = 1, limit = 12,
   } = req.query
 
@@ -32,6 +33,22 @@ exports.getCars = async (req, res) => {
     query.pricePerDay = {}
     if (minPrice) query.pricePerDay.$gte = Number(minPrice)
     if (maxPrice) query.pricePerDay.$lte = Number(maxPrice)
+  }
+
+  if (pickupDate && returnDate) {
+    const pickup = new Date(pickupDate);
+    const returnD = new Date(returnDate);
+
+    const overlappingBookings = await Booking.find({
+      bookingStatus: { $nin: ['Cancelled'] },
+      pickupDate: { $lt: returnD },
+      returnDate: { $gt: pickup }
+    }).select('car');
+
+    const bookedCarIds = overlappingBookings.map(b => b.car);
+    if (bookedCarIds.length > 0) {
+      query._id = { $nin: bookedCarIds };
+    }
   }
 
   const skip = (Number(page) - 1) * Number(limit)
@@ -61,6 +78,10 @@ exports.getCars = async (req, res) => {
           const fuel = rawFuel.charAt(0).toUpperCase() + rawFuel.slice(1);
           const bodyType = car.catalogEntry?.body || 'Standard';
 
+          const brandName = car.catalogEntry?.brand?.name || 'car';
+          const modelName = car.catalogEntry?.model || (car.name ? car.name.replace(brandName, '').trim() : 'car');
+          const fallbackImage = `https://cdn.imagin.studio/getimage?customer=hrjavascript-mastery&make=${encodeURIComponent(brandName)}&modelFamily=${encodeURIComponent(modelName)}&paintId=pspc0001&angle=23&width=800&zoomType=fullscreen`;
+
           return {
             _id: `ext-${car.id || idx}`, 
             isExternal: true,
@@ -71,7 +92,8 @@ exports.getCars = async (req, res) => {
             seats: car.catalogEntry?.seatingCapacity || 4,
             transmission: car.catalogVariant?.transmission || 'Automatic',
             description: `Variant: ${car.catalogVariant?.name || 'N/A'}`,
-            images: car.primaryImage ? [`https://velocity.quantumstudio.in/${car.primaryImage}`] : [],
+            images: car.primaryImage ? [`https://cdn.quantumstudio.in/vehicles/${car.primaryImage}`] : [fallbackImage],
+            fallbackImage,
             category: bodyType.toUpperCase(),
             available: true,
             rating: 4.8
@@ -119,6 +141,10 @@ exports.getCar = async (req, res) => {
           const fuel = rawFuel.charAt(0).toUpperCase() + rawFuel.slice(1);
           const bodyType = rawCar.catalogEntry?.body || 'Standard';
 
+          const brandName = rawCar.catalogEntry?.brand?.name || 'car';
+          const modelName = rawCar.catalogEntry?.model || (rawCar.name ? rawCar.name.replace(brandName, '').trim() : 'car');
+          const fallbackImage = `https://cdn.imagin.studio/getimage?customer=hrjavascript-mastery&make=${encodeURIComponent(brandName)}&modelFamily=${encodeURIComponent(modelName)}&paintId=pspc0001&angle=23&width=800&zoomType=fullscreen`;
+
           const mappedCar = {
             _id: id,
             isExternal: true,
@@ -129,7 +155,8 @@ exports.getCar = async (req, res) => {
             seats: rawCar.catalogEntry?.seatingCapacity || 4,
             transmission: rawCar.catalogVariant?.transmission || 'Automatic',
             description: `Variant: ${rawCar.catalogVariant?.name || 'N/A'}`,
-            images: rawCar.primaryImage ? [`https://velocity.quantumstudio.in/${rawCar.primaryImage}`] : [],
+            images: rawCar.primaryImage ? [`https://cdn.quantumstudio.in/vehicles/${rawCar.primaryImage}`] : [fallbackImage],
+            fallbackImage,
             category: bodyType.toUpperCase(),
             available: true,
             rating: 4.8

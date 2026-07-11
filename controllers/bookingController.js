@@ -6,7 +6,7 @@ const Settings = require('../models/Settings')
 // @route   POST /api/bookings
 // @access  Private
 exports.createBooking = async (req, res) => {
-  const { carId, pickupDate, returnDate, pickupLocation, includesInsurance, paymentMethod } = req.body
+  const { carId, pickupDate, returnDate, pickupLocation, deliveryMode, includesInsurance, paymentMethod, drivingLicenseNumber, aadhaarNumber, address } = req.body
 
   const car = await Car.findById(carId)
   if (!car) {
@@ -48,6 +48,13 @@ exports.createBooking = async (req, res) => {
     pickupDate: pickup,
     returnDate: returnD,
     pickupLocation,
+    deliveryMode: deliveryMode || 'Parking',
+    drivingLicenseNumber,
+    aadhaarNumber,
+    address,
+    dlDocument: req.files?.dlDocument?.[0]?.filename || '',
+    aadhaarDocument: req.files?.aadhaarDocument?.[0]?.filename || '',
+    paymentScreenshot: req.files?.paymentScreenshot?.[0]?.filename || '',
     totalDays,
     pricePerDay: car.pricePerDay,
     insuranceFee,

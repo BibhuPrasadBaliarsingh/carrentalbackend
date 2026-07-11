@@ -24,6 +24,17 @@ const BookingSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide a pickup location'],
     },
+    drivingLicenseNumber: { type: String, default: '' },
+    aadhaarNumber: { type: String, default: '' },
+    address: { type: String, default: '' },
+    dlDocument: { type: String, default: '' },
+    aadhaarDocument: { type: String, default: '' },
+    paymentScreenshot: { type: String, default: '' },
+    deliveryMode: {
+      type: String,
+      enum: ['Parking', 'Doorstep', 'Airport'],
+      default: 'Parking',
+    },
     totalDays: {
       type: Number,
       required: true,
