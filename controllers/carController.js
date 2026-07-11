@@ -37,10 +37,53 @@ exports.getCars = async (req, res) => {
   const skip = (Number(page) - 1) * Number(limit)
   const total = await Car.countDocuments(query)
 
-  const cars = await Car.find(query)
+  const dbCars = await Car.find(query)
     .sort(sort)
     .skip(skip)
     .limit(Number(limit))
+    .lean()
+
+  let externalCars = []
+  try {
+    const extRes = await fetch('https://velocity.quantumstudio.in/api/organizations/speed-toyz-cars/vehicles', {
+      headers: { 'x-api-key': '2f87d2d7-ecdd-4389-b4ff-df9481a5fc8a' }
+    });
+    if (extRes.ok) {
+      const data = await extRes.json();
+      const extList = data.vehicles || data.data || data;
+      
+      if (Array.isArray(extList)) {
+        externalCars = extList.map((car, idx) => {
+          const dailySlab = car.pricingConfig?.slabs?.find(s => s.duration_hours === 24);
+          const price = dailySlab ? dailySlab.price : (car.pricePerDay || 0);
+          
+          const rawFuel = car.catalogVariant?.fuelType || 'Petrol';
+          const fuel = rawFuel.charAt(0).toUpperCase() + rawFuel.slice(1);
+          const bodyType = car.catalogEntry?.body || 'Standard';
+
+          return {
+            _id: `ext-${car.id || idx}`, 
+            isExternal: true,
+            name: `${car.name || 'Unknown'} - ${car.licensePlate || 'No Plate'}`,
+            brand: car.catalogEntry?.brand?.name || 'External',
+            pricePerDay: price,
+            fuelType: fuel,
+            seats: car.catalogEntry?.seatingCapacity || 4,
+            transmission: car.catalogVariant?.transmission || 'Automatic',
+            description: `Variant: ${car.catalogVariant?.name || 'N/A'}`,
+            images: car.primaryImage ? [`https://velocity.quantumstudio.in/${car.primaryImage}`] : [],
+            category: bodyType.toUpperCase(),
+            available: true,
+            rating: 4.8
+          };
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch external cars:', err.message);
+  }
+
+  const cars = [...dbCars, ...externalCars]
 
   res.status(200).json({
     success: true,
@@ -55,7 +98,52 @@ exports.getCars = async (req, res) => {
 // @route   GET /api/cars/:id
 // @access  Public
 exports.getCar = async (req, res) => {
-  const car = await Car.findById(req.params.id)
+  const id = req.params.id;
+
+  if (id.startsWith('ext-')) {
+    const extId = id.slice(4);
+    try {
+      const extRes = await fetch('https://velocity.quantumstudio.in/api/organizations/speed-toyz-cars/vehicles', {
+        headers: { 'x-api-key': '2f87d2d7-ecdd-4389-b4ff-df9481a5fc8a' }
+      });
+      if (extRes.ok) {
+        const data = await extRes.json();
+        const extList = data.vehicles || data.data || data;
+        const rawCar = (Array.isArray(extList) ? extList : []).find(c => String(c.id) === extId || String(extList.indexOf(c)) === extId);
+        
+        if (rawCar) {
+          const dailySlab = rawCar.pricingConfig?.slabs?.find(s => s.duration_hours === 24);
+          const price = dailySlab ? dailySlab.price : (rawCar.pricePerDay || 0);
+          
+          const rawFuel = rawCar.catalogVariant?.fuelType || 'Petrol';
+          const fuel = rawFuel.charAt(0).toUpperCase() + rawFuel.slice(1);
+          const bodyType = rawCar.catalogEntry?.body || 'Standard';
+
+          const mappedCar = {
+            _id: id,
+            isExternal: true,
+            name: `${rawCar.name || 'Unknown'} - ${rawCar.licensePlate || 'No Plate'}`,
+            brand: rawCar.catalogEntry?.brand?.name || 'External',
+            pricePerDay: price,
+            fuelType: fuel,
+            seats: rawCar.catalogEntry?.seatingCapacity || 4,
+            transmission: rawCar.catalogVariant?.transmission || 'Automatic',
+            description: `Variant: ${rawCar.catalogVariant?.name || 'N/A'}`,
+            images: rawCar.primaryImage ? [`https://velocity.quantumstudio.in/${rawCar.primaryImage}`] : [],
+            category: bodyType.toUpperCase(),
+            available: true,
+            rating: 4.8
+          };
+          return res.status(200).json({ success: true, car: mappedCar });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch external car by ID:', err.message);
+    }
+    return res.status(404).json({ success: false, message: 'External car not found' });
+  }
+
+  const car = await Car.findById(id)
   if (!car) {
     return res.status(404).json({ success: false, message: 'Car not found' })
   }

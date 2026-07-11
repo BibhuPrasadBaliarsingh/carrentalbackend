@@ -24,16 +24,22 @@ const app = express()
 
 const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
   .split(',')
-  .map(origin => origin.trim())
+  .map(origin => origin.trim().replace(/\/$/, '')) // Strip trailing slashes
   .filter(Boolean)
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // In dev, Postman/curl sometimes send no origin. Allow it if there's no origin,
+    // or if the origin exactly matches one in our list.
+    const normalizedOrigin = origin ? origin.replace(/\/$/, '') : null;
+    
+    if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
       callback(null, true)
       return
     }
+    
+    console.warn(`⚠️ CORS Blocked: Origin ${origin} is not in allowedOrigins [${allowedOrigins.join(', ')}]`);
     callback(new Error('Not allowed by CORS'))
   },
   credentials: true,
