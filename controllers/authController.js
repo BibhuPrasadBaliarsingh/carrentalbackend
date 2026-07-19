@@ -1,5 +1,6 @@
 const crypto = require('crypto')
 const User = require('../models/User')
+const sendEmail = require('../utils/sendEmail')
 
 // Helper: send token response
 const sendToken = (user, statusCode, res) => {
@@ -45,10 +46,13 @@ exports.login = async (req, res) => {
   const { email, password } = req.body
 
   if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Please provide email and password' })
+    return res.status(400).json({ success: false, message: 'Please provide email or phone and password' })
   }
 
-  const user = await User.findOne({ email }).select('+password')
+  const user = await User.findOne({ 
+    $or: [{ email: email.toLowerCase() }, { phone: email }] 
+  }).select('+password')
+  
   if (!user) {
     return res.status(401).json({ success: false, message: 'Invalid credentials' })
   }
@@ -106,22 +110,47 @@ exports.changePassword = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body
   if (!email) return res.status(400).json({ success: false, message: 'Please provide an email' })
-  const user = await User.findOne({ email })
-  if (!user) return res.status(200).json({ success: true, message: 'If an account exists for that email, a reset link has been generated.' })
-  const resetToken = user.getResetPasswordToken()
+  const user = await User.findOne({ email: email.toLowerCase() })
+  if (!user) return res.status(200).json({ success: true, message: 'If an account exists for that email, an OTP has been sent.' })
+  
+  const otp = user.getResetPasswordToken()
   await user.save({ validateBeforeSave: false })
-  res.status(200).json({ success: true, message: 'If an account exists for that email, a reset link has been generated.', resetToken })
+  
+  const message = `Your password reset OTP is: ${otp}\n\nIt is valid for 10 minutes.\nIf you did not request a password reset, please ignore this email.`
+  
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Password Reset OTP',
+      message
+    })
+    res.status(200).json({ success: true, message: 'If an account exists for that email, an OTP has been sent.' })
+  } catch (err) {
+    user.resetPasswordToken = undefined
+    user.resetPasswordExpire = undefined
+    await user.save({ validateBeforeSave: false })
+    return res.status(500).json({ success: false, message: 'Email could not be sent' })
+  }
 }
 
 exports.resetPassword = async (req, res) => {
-  const { password } = req.body
-  if (!password || password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' })
-  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex')
-  const user = await User.findOne({ resetPasswordToken: hashedToken, resetPasswordExpire: { $gt: Date.now() } })
-  if (!user) return res.status(400).json({ success: false, message: 'Reset link is invalid or has expired' })
+  const { email, otp, password } = req.body
+  if (!email || !otp || !password) return res.status(400).json({ success: false, message: 'Please provide email, OTP, and new password' })
+  if (password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' })
+  
+  const hashedToken = crypto.createHash('sha256').update(otp).digest('hex')
+  const user = await User.findOne({ 
+    email: email.toLowerCase(),
+    resetPasswordToken: hashedToken, 
+    resetPasswordExpire: { $gt: Date.now() } 
+  })
+  
+  if (!user) return res.status(400).json({ success: false, message: 'OTP is invalid or has expired' })
+  
   user.password = password
   user.resetPasswordToken = undefined
   user.resetPasswordExpire = undefined
   await user.save()
+  
   sendToken(user, 200, res)
 }

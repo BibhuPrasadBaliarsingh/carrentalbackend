@@ -68,9 +68,15 @@ UserSchema.methods.getSignedJwtToken = function () {
 }
 
 UserSchema.methods.getResetPasswordToken = function () {
-  const resetToken = crypto.randomBytes(20).toString('hex')
+  // Generate a 6-digit OTP
+  const resetToken = Math.floor(100000 + Math.random() * 900000).toString()
+  
+  // Hash the OTP and set to resetPasswordToken field
   this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex')
-  this.resetPasswordExpire = Date.now() + 30 * 60 * 1000
+  
+  // Set expire to 10 minutes
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000
+  
   return resetToken
 }
 
