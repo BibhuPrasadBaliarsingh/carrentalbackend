@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const Booking = require('../models/Booking')
 const Car = require('../models/Car')
 const Settings = require('../models/Settings')
@@ -6,12 +7,29 @@ const Settings = require('../models/Settings')
 // @route   POST /api/bookings
 // @access  Private
 exports.createBooking = async (req, res) => {
-  const { carId, pickupDate, returnDate, pickupLocation, deliveryMode, includesInsurance, paymentMethod, drivingLicenseNumber, aadhaarNumber, address } = req.body
+  const { carId, carName, carBrand, carCategory, pricePerDay, pickupDate, returnDate, pickupLocation, deliveryMode, includesInsurance, paymentMethod, drivingLicenseNumber, aadhaarNumber, address } = req.body
 
-  const car = await Car.findById(carId)
-  if (!car) {
-    return res.status(404).json({ success: false, message: 'Car not found' })
+  let car
+  if (mongoose.isValidObjectId(carId)) {
+    car = await Car.findById(carId)
   }
+
+  if (!car && carName) {
+    car = await Car.findOne({ name: carName })
+  }
+
+  if (!car) {
+    // Automatically seed/create car in MongoDB if missing or using mock car
+    car = await Car.create({
+      name: carName || 'Luxury Rental Car',
+      brand: carBrand || 'SpeedToyz',
+      category: carCategory || 'Sports',
+      pricePerDay: Number(pricePerDay) || 500,
+      images: ['https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800'],
+      available: true,
+    })
+  }
+
   if (!car.available) {
     return res.status(400).json({ success: false, message: 'Car is not available' })
   }
@@ -19,12 +37,13 @@ exports.createBooking = async (req, res) => {
   const pickup = new Date(pickupDate)
   const returnD = new Date(returnDate)
 
-  if (returnD <= pickup) {
+  if (isNaN(pickup.getTime()) || isNaN(returnD.getTime()) || returnD <= pickup) {
     return res.status(400).json({ success: false, message: 'Return date must be after pickup date' })
   }
 
-  const totalDays = Math.ceil((returnD - pickup) / (1000 * 60 * 60 * 24))
-  const insuranceFee = includesInsurance ? 50 * totalDays : 0
+  const isInsurance = includesInsurance === true || includesInsurance === 'true'
+  const totalDays = Math.max(1, Math.ceil((returnD - pickup) / (1000 * 60 * 60 * 24)))
+  const insuranceFee = isInsurance ? 50 * totalDays : 0
   const settings = await Settings.getSingleton()
   const taxRate = Number(settings.taxRate || 8) / 100
   const subtotal = car.pricePerDay * totalDays + insuranceFee
@@ -32,7 +51,7 @@ exports.createBooking = async (req, res) => {
   const totalPrice = subtotal + taxAmount
 
   const overlappingBooking = await Booking.findOne({
-    car: carId,
+    car: car._id,
     bookingStatus: { $nin: ['Cancelled'] },
     pickupDate: { $lt: returnD },
     returnDate: { $gt: pickup },
@@ -44,14 +63,14 @@ exports.createBooking = async (req, res) => {
 
   const booking = await Booking.create({
     user: req.user.id,
-    car: carId,
+    car: car._id,
     pickupDate: pickup,
     returnDate: returnD,
-    pickupLocation,
+    pickupLocation: pickupLocation || 'Main Office',
     deliveryMode: deliveryMode || 'Parking',
-    drivingLicenseNumber,
-    aadhaarNumber,
-    address,
+    drivingLicenseNumber: drivingLicenseNumber || '',
+    aadhaarNumber: aadhaarNumber || '',
+    address: address || '',
     dlDocument: req.files?.dlDocument?.[0]?.filename || '',
     aadhaarDocument: req.files?.aadhaarDocument?.[0]?.filename || '',
     paymentScreenshot: req.files?.paymentScreenshot?.[0]?.filename || '',
@@ -60,8 +79,8 @@ exports.createBooking = async (req, res) => {
     insuranceFee,
     taxAmount,
     totalPrice,
-    includesInsurance: !!includesInsurance,
-    paymentMethod: paymentMethod || 'Credit Card',
+    includesInsurance: isInsurance,
+    paymentMethod: paymentMethod || 'Bank Transfer',
     bookingStatus: 'Confirmed',
     paymentStatus: 'Paid',
   })
