@@ -10,7 +10,7 @@ exports.getCars = async (req, res) => {
   const {
     search, brand, category, fuelType, transmission,
     minPrice, maxPrice, available, pickupDate, returnDate,
-    sort = '-createdAt', page = 1, limit = 12,
+    sort = '-createdAt', page = 1, limit = 500,
   } = req.query
 
   const query = {}
@@ -51,13 +51,14 @@ exports.getCars = async (req, res) => {
     }
   }
 
-  const skip = (Number(page) - 1) * Number(limit)
+  const safeLimit = Math.min(Math.max(1, parseInt(limit) || 500), 500)
+  const skip = (Number(page) - 1) * safeLimit
   const total = await Car.countDocuments(query)
 
   const dbCars = await Car.find(query)
     .sort(sort)
     .skip(skip)
-    .limit(Number(limit))
+    .limit(safeLimit)
     .lean()
 
   let externalCars = []
@@ -72,7 +73,7 @@ exports.getCars = async (req, res) => {
       if (Array.isArray(extList)) {
         externalCars = extList.map((car, idx) => {
           const dailySlab = car.pricingConfig?.slabs?.find(s => s.duration_hours === 24);
-          const price = dailySlab ? dailySlab.price : (car.pricePerDay || 0);
+          const price = (dailySlab && dailySlab.price > 0) ? dailySlab.price : (car.pricePerDay || 500);
           
           const rawFuel = car.catalogVariant?.fuelType || 'Petrol';
           const fuel = rawFuel.charAt(0).toUpperCase() + rawFuel.slice(1);
@@ -82,15 +83,27 @@ exports.getCars = async (req, res) => {
           const modelName = car.catalogEntry?.model || (car.name ? car.name.replace(brandName, '').trim() : 'car');
           const fallbackImage = `https://cdn.imagin.studio/getimage?customer=hrjavascript-mastery&make=${encodeURIComponent(brandName)}&modelFamily=${encodeURIComponent(modelName)}&paintId=pspc0001&angle=23&width=800&zoomType=fullscreen`;
 
+          const resolveTransmission = (c) => {
+            const rawTrans = c.catalogVariant?.transmission;
+            if (rawTrans && typeof rawTrans === 'string' && rawTrans.trim()) {
+              return rawTrans.charAt(0).toUpperCase() + rawTrans.slice(1).toLowerCase();
+            }
+            const text = `${c.name || ''} ${c.variant || ''} ${c.catalogVariant?.name || ''}`.toUpperCase();
+            if (/\b(AT|AUTOMATIC|AMT|CVT|DCT|DSG)\b/.test(text) || text.includes(' AUTOMATIC ') || text.includes(' AT ')) {
+              return 'Automatic';
+            }
+            return 'Manual';
+          };
+
           return {
             _id: `ext-${car.id || idx}`, 
             isExternal: true,
-            name: `${car.name || 'Unknown'} - ${car.licensePlate || 'No Plate'}`,
+            name: car.name ? car.name.split(' - ')[0].trim() : 'Unknown',
             brand: car.catalogEntry?.brand?.name || 'External',
             pricePerDay: price,
             fuelType: fuel,
             seats: car.catalogEntry?.seatingCapacity || 4,
-            transmission: car.catalogVariant?.transmission || 'Automatic',
+            transmission: resolveTransmission(car),
             description: `Variant: ${car.catalogVariant?.name || 'N/A'}`,
             images: car.primaryImage ? [`https://cdn.quantumstudio.in/vehicles/${car.primaryImage}`] : [fallbackImage],
             fallbackImage,
@@ -106,12 +119,13 @@ exports.getCars = async (req, res) => {
   }
 
   const cars = [...dbCars, ...externalCars]
+  const combinedTotal = total + externalCars.length
 
   res.status(200).json({
     success: true,
-    total,
+    total: combinedTotal,
     page: Number(page),
-    pages: Math.ceil(total / Number(limit)),
+    pages: Math.ceil(combinedTotal / Number(limit)) || 1,
     cars,
   })
 }
@@ -145,15 +159,27 @@ exports.getCar = async (req, res) => {
           const modelName = rawCar.catalogEntry?.model || (rawCar.name ? rawCar.name.replace(brandName, '').trim() : 'car');
           const fallbackImage = `https://cdn.imagin.studio/getimage?customer=hrjavascript-mastery&make=${encodeURIComponent(brandName)}&modelFamily=${encodeURIComponent(modelName)}&paintId=pspc0001&angle=23&width=800&zoomType=fullscreen`;
 
+          const resolveTransmission = (c) => {
+            const rawTrans = c.catalogVariant?.transmission;
+            if (rawTrans && typeof rawTrans === 'string' && rawTrans.trim()) {
+              return rawTrans.charAt(0).toUpperCase() + rawTrans.slice(1).toLowerCase();
+            }
+            const text = `${c.name || ''} ${c.variant || ''} ${c.catalogVariant?.name || ''}`.toUpperCase();
+            if (/\b(AT|AUTOMATIC|AMT|CVT|DCT|DSG)\b/.test(text) || text.includes(' AUTOMATIC ') || text.includes(' AT ')) {
+              return 'Automatic';
+            }
+            return 'Manual';
+          };
+
           const mappedCar = {
             _id: id,
             isExternal: true,
-            name: `${rawCar.name || 'Unknown'} - ${rawCar.licensePlate || 'No Plate'}`,
+            name: rawCar.name ? rawCar.name.split(' - ')[0].trim() : 'Unknown',
             brand: rawCar.catalogEntry?.brand?.name || 'External',
             pricePerDay: price,
             fuelType: fuel,
             seats: rawCar.catalogEntry?.seatingCapacity || 4,
-            transmission: rawCar.catalogVariant?.transmission || 'Automatic',
+            transmission: resolveTransmission(rawCar),
             description: `Variant: ${rawCar.catalogVariant?.name || 'N/A'}`,
             images: rawCar.primaryImage ? [`https://cdn.quantumstudio.in/vehicles/${rawCar.primaryImage}`] : [fallbackImage],
             fallbackImage,

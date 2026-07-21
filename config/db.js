@@ -4,11 +4,12 @@ const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 5000,
+      tls: true,
+      tlsAllowInvalidCertificates: true,
     })
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`)
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`)
-    process.exit(1)
+    console.error(`⚠️ MongoDB Initial Connection Warning: ${error.message}`)
   }
 }
 

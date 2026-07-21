@@ -29,25 +29,45 @@ exports.getSettings = async (req, res) => {
 }
 
 exports.getPublicSettings = async (req, res) => {
-  const settings = await Settings.getSingleton()
-  res.status(200).json({
-    success: true,
-    settings: {
-      platformName: settings.platformName,
-      supportEmail: settings.supportEmail,
-      currency: settings.currency,
-      taxRate: settings.taxRate,
-    },
-  })
+  try {
+    const settings = await Settings.getSingleton()
+    res.status(200).json({
+      success: true,
+      settings: {
+        platformName: settings?.platformName || 'SpeedToyz Cars',
+        supportEmail: settings?.supportEmail || 'support@speedtoyz.com',
+        currency: settings?.currency || 'INR (₹)',
+        taxRate: settings?.taxRate || 8,
+      },
+    })
+  } catch (err) {
+    res.status(200).json({
+      success: true,
+      settings: {
+        platformName: 'SpeedToyz Cars',
+        supportEmail: 'support@speedtoyz.com',
+        currency: 'INR (₹)',
+        taxRate: 8,
+      },
+    })
+  }
 }
 
 exports.getFilterOptions = async (req, res) => {
-  const settings = await Settings.getSingleton()
-  res.status(200).json({
-    success: true,
-    brands: settings.brands || [],
-    categories: settings.categories || [],
-  })
+  try {
+    const settings = await Settings.getSingleton()
+    res.status(200).json({
+      success: true,
+      brands: settings?.brands || [],
+      categories: settings?.categories || [],
+    })
+  } catch (err) {
+    res.status(200).json({
+      success: true,
+      brands: ['Ferrari', 'Mercedes', 'Land Rover', 'Porsche', 'BMW', 'Tesla', 'Lamborghini', 'Audi', 'McLaren'],
+      categories: ['Sports', 'Luxury', 'SUV', 'Electric', 'Supercar'],
+    })
+  }
 }
 
 exports.updateSettings = async (req, res) => {

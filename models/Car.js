@@ -15,7 +15,6 @@ const CarSchema = new mongoose.Schema(
     category: {
       type: String,
       required: [true, 'Please provide a category'],
-      enum: ['Sports', 'Luxury', 'SUV', 'Electric', 'Supercar', 'Convertible', 'Sedan'],
     },
     pricePerDay: {
       type: Number,
@@ -24,12 +23,11 @@ const CarSchema = new mongoose.Schema(
     },
     fuelType: {
       type: String,
-      required: [true, 'Please provide fuel type'],
-      enum: ['Petrol', 'Diesel', 'Electric', 'Hybrid'],
+      default: 'Petrol',
     },
     seats: {
       type: Number,
-      required: [true, 'Please provide number of seats'],
+      default: 5,
       min: 1,
       max: 12,
     },
@@ -41,7 +39,7 @@ const CarSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: [true, 'Please provide a description'],
+      default: 'Premium rental vehicle available for booking.',
       maxlength: [2000, 'Description cannot exceed 2000 characters'],
     },
     images: {

@@ -93,56 +93,33 @@ const cars = [
 const seed = async () => {
   await connectDB()
 
-  console.log('🗑  Clearing existing data...')
-  await Promise.all([User.deleteMany(), Car.deleteMany(), Booking.deleteMany()])
+  console.log('🗑  Clearing car and booking seed data...')
+  await Promise.all([Car.deleteMany(), Booking.deleteMany()])
 
-  console.log('👤 Creating admin user...')
-  const admin = await User.create({
-    name: 'Admin User',
-    email: 'admin@speedtoyz.com',
-    password: 'Admin@123',
-    role: 'admin',
-  })
+  console.log('👤 Ensuring default admin and sample users exist...')
+  const existingAdmin = await User.findOne({ email: 'admin@speedtoyz.com' })
+  if (!existingAdmin) {
+    await User.create({
+      name: 'Admin User',
+      email: 'admin@speedtoyz.com',
+      password: 'Admin@123',
+      role: 'admin',
+    })
+  }
 
-  console.log('👤 Creating sample user...')
-  const user = await User.create({
-    name: 'John Doe',
-    email: 'john@example.com',
-    password: 'User@123',
-    role: 'user',
-    phone: '+1 555-123-4567',
-  })
+  const existingJohn = await User.findOne({ email: 'john@example.com' })
+  if (!existingJohn) {
+    await User.create({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: 'User@123',
+      role: 'user',
+      phone: '+1 555-123-4567',
+    })
+  }
 
   console.log('🚗 Seeding cars...')
   const createdCars = await Car.insertMany(cars)
-
-  console.log('📅 Creating sample bookings...')
-  await Booking.create([
-    {
-      user: user._id,
-      car: createdCars[0]._id,
-      pickupDate: new Date('2025-07-10'),
-      returnDate: new Date('2025-07-13'),
-      pickupLocation: 'Miami International Airport',
-      totalDays: 3,
-      pricePerDay: createdCars[0].pricePerDay,
-      totalPrice: createdCars[0].pricePerDay * 3,
-      bookingStatus: 'Confirmed',
-      paymentStatus: 'Paid',
-    },
-    {
-      user: user._id,
-      car: createdCars[3]._id,
-      pickupDate: new Date('2025-06-20'),
-      returnDate: new Date('2025-06-22'),
-      pickupLocation: 'Downtown Miami',
-      totalDays: 2,
-      pricePerDay: createdCars[3].pricePerDay,
-      totalPrice: createdCars[3].pricePerDay * 2,
-      bookingStatus: 'Completed',
-      paymentStatus: 'Paid',
-    },
-  ])
 
   console.log('\n✅ Seed complete!')
   console.log('─────────────────────────────────')

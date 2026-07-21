@@ -5,7 +5,8 @@ const BookingSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false,
+      default: null,
     },
     car: {
       type: mongoose.Schema.Types.ObjectId,
@@ -27,6 +28,8 @@ const BookingSchema = new mongoose.Schema(
     drivingLicenseNumber: { type: String, default: '' },
     aadhaarNumber: { type: String, default: '' },
     address: { type: String, default: '' },
+    email: { type: String, default: '' },
+    phone: { type: String, default: '' },
     dlDocument: { type: String, default: '' },
     aadhaarDocument: { type: String, default: '' },
     paymentScreenshot: { type: String, default: '' },
@@ -45,6 +48,10 @@ const BookingSchema = new mongoose.Schema(
       required: true,
     },
     insuranceFee: {
+      type: Number,
+      default: 0,
+    },
+    taxAmount: {
       type: Number,
       default: 0,
     },

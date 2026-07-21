@@ -5,18 +5,30 @@ const Booking = require('../models/Booking')
 // @route   GET /api/users
 // @access  Admin
 exports.getUsers = async (req, res) => {
-  const { search, role, page = 1, limit = 20 } = req.query
-  const query = {}
-  if (search) query.$or = [{ name: { $regex: search, $options: 'i' } }, { email: { $regex: search, $options: 'i' } }]
-  if (role) query.role = role
+  try {
+    const { search, role, page = 1, limit = 500 } = req.query
+    const query = {}
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+      ]
+    }
+    if (role) query.role = role
 
-  const total = await User.countDocuments(query)
-  const users = await User.find(query)
-    .sort('-createdAt')
-    .skip((page - 1) * limit)
-    .limit(Number(limit))
+    const total = await User.countDocuments(query)
+    const safeLimit = Math.min(Math.max(1, parseInt(limit) || 500), 500)
+    const users = await User.find(query)
+      .sort('-createdAt')
+      .skip((Number(page) - 1) * safeLimit)
+      .limit(safeLimit)
+      .lean()
 
-  res.status(200).json({ success: true, total, users })
+    res.status(200).json({ success: true, total, users })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || 'Error fetching users' })
+  }
 }
 
 // @desc    Get single user

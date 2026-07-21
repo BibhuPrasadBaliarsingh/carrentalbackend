@@ -5,16 +5,33 @@ const Booking = require('../models/Booking')
 // @desc    Get dashboard stats
 // @route   GET /api/dashboard/stats
 // @access  Admin
+// @desc    Get dashboard stats
+// @route   GET /api/dashboard/stats
+// @access  Admin
 exports.getStats = async (req, res) => {
-  const [totalUsers, totalCars, totalBookings, bookings] = await Promise.all([
+  let externalCount = 0
+  try {
+    const extRes = await fetch('https://velocity.quantumstudio.in/api/organizations/speed-toyz-cars/vehicles', {
+      headers: { 'x-api-key': '2f87d2d7-ecdd-4389-b4ff-df9481a5fc8a' }
+    });
+    if (extRes.ok) {
+      const data = await extRes.json();
+      const list = data.vehicles || data.data || data;
+      if (Array.isArray(list)) externalCount = list.length
+    }
+  } catch {}
+
+  const [totalUsers, dbCarsCount, totalBookings, bookings] = await Promise.all([
     User.countDocuments({ role: 'user' }),
     Car.countDocuments(),
     Booking.countDocuments(),
     Booking.find({ bookingStatus: { $ne: 'Cancelled' } }),
   ])
 
+  const totalCars = dbCarsCount + externalCount
   const revenue = bookings.reduce((sum, b) => sum + b.totalPrice, 0)
-  const activeCars = await Car.countDocuments({ available: true })
+  const dbActive = await Car.countDocuments({ available: true })
+  const activeCars = dbActive + externalCount
 
   // Revenue by month (last 7 months)
   const now = new Date()
