@@ -92,9 +92,9 @@ exports.initiatePayment = async (req, res) => {
         throw new Error(data.message || 'PhonePe gateway API response fallback')
       }
     } catch (apiErr) {
-      console.warn('⚡ PhonePe API call fallback to simulation/UPI link:', apiErr.message)
+      console.warn('⚡ PhonePe API call fallback to simulation mode:', apiErr.message)
       isSimulated = true
-      redirectUrlResponse = `${clientUrl}/my-bookings?ref=${bookingRef}&txnId=${merchantTransactionId}&simulated=true`
+      redirectUrlResponse = null
     }
 
     // Update booking if exists
