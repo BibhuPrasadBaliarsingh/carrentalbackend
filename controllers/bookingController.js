@@ -129,8 +129,8 @@ exports.createBooking = async (req, res) => {
       totalPrice,
       includesInsurance: isInsurance,
       paymentMethod: paymentMethod || 'Bank Transfer',
-      bookingStatus: 'Confirmed',
-      paymentStatus: 'Paid',
+      bookingStatus: 'Pending',
+      paymentStatus: 'Pending',
     })
 
     const populated = await booking.populate([

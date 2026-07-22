@@ -88,6 +88,24 @@ const cars = [
     features: ['Proactive Chassis Control', 'Carbon Monocoque', 'Variable Drift Control', 'Track Telemetry'],
     year: 2023,
   },
+  {
+    name: 'Maruti Alto K10 (Manual)', brand: 'Maruti', category: 'Hatchback',
+    pricePerDay: 199, fuelType: 'Petrol', seats: 5, transmission: 'Manual',
+    rating: 4.6, available: true,
+    images: ['https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&q=80'],
+    description: 'Maruti Alto K10 Manual Transmission — Fuel-efficient 1.0L K-Series engine with 5-speed smooth manual gear shift.',
+    features: ['Power Steering', 'Power Windows', 'ABS with EBD', 'Airbags', 'Manual AC'],
+    year: 2023,
+  },
+  {
+    name: 'Maruti Alto K10 (Automatic)', brand: 'Maruti', category: 'Hatchback',
+    pricePerDay: 249, fuelType: 'Petrol', seats: 5, transmission: 'Automatic',
+    rating: 4.7, available: true,
+    images: ['https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&q=80'],
+    description: 'Maruti Alto K10 Auto Gear Shift (AGS) — Effortless automatic driving experience ideal for city traffic & long drives.',
+    features: ['Auto Gear Shift (AGS)', 'SmartPlay Touchscreen', 'Power Windows', 'Dual Airbags'],
+    year: 2024,
+  },
 ]
 
 const seed = async () => {

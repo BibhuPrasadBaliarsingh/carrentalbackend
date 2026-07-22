@@ -54,10 +54,10 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide email or phone and password' })
     }
 
-    let user = await User.findOne({ 
-      $or: [{ email: email.toLowerCase() }, { phone: email }] 
+    let user = await User.findOne({
+      $or: [{ email: email.toLowerCase() }, { phone: email }]
     }).select('+password')
-    
+
     if (!user && email.trim().toLowerCase() === 'admin@speedtoyz.com' && password === 'Admin@123') {
       user = await User.create({
         name: 'Admin User',
@@ -129,12 +129,12 @@ exports.forgotPassword = async (req, res) => {
   if (!email) return res.status(400).json({ success: false, message: 'Please provide an email' })
   const user = await User.findOne({ email: email.toLowerCase() })
   if (!user) return res.status(200).json({ success: true, message: 'If an account exists for that email, an OTP has been sent.' })
-  
+
   const otp = user.getResetPasswordToken()
   await user.save({ validateBeforeSave: false })
-  
+
   const message = `Your password reset OTP is: ${otp}\n\nIt is valid for 10 minutes.\nIf you did not request a password reset, please ignore this email.`
-  
+
   try {
     await sendEmail({
       email: user.email,
@@ -154,20 +154,20 @@ exports.resetPassword = async (req, res) => {
   const { email, otp, password } = req.body
   if (!email || !otp || !password) return res.status(400).json({ success: false, message: 'Please provide email, OTP, and new password' })
   if (password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' })
-  
+
   const hashedToken = crypto.createHash('sha256').update(otp).digest('hex')
-  const user = await User.findOne({ 
+  const user = await User.findOne({
     email: email.toLowerCase(),
-    resetPasswordToken: hashedToken, 
-    resetPasswordExpire: { $gt: Date.now() } 
+    resetPasswordToken: hashedToken,
+    resetPasswordExpire: { $gt: Date.now() }
   })
-  
+
   if (!user) return res.status(400).json({ success: false, message: 'OTP is invalid or has expired' })
-  
+
   user.password = password
   user.resetPasswordToken = undefined
   user.resetPasswordExpire = undefined
   await user.save()
-  
+
   sendToken(user, 200, res)
 }

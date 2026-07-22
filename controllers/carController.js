@@ -69,12 +69,12 @@ exports.getCars = async (req, res) => {
     if (extRes.ok) {
       const data = await extRes.json();
       const extList = data.vehicles || data.data || data;
-      
+
       if (Array.isArray(extList)) {
         externalCars = extList.map((car, idx) => {
           const dailySlab = car.pricingConfig?.slabs?.find(s => s.duration_hours === 24);
           const price = (dailySlab && dailySlab.price > 0) ? dailySlab.price : (car.pricePerDay || 500);
-          
+
           const rawFuel = car.catalogVariant?.fuelType || 'Petrol';
           const fuel = rawFuel.charAt(0).toUpperCase() + rawFuel.slice(1);
           const bodyType = car.catalogEntry?.body || 'Standard';
@@ -96,7 +96,7 @@ exports.getCars = async (req, res) => {
           };
 
           return {
-            _id: `ext-${car.id || idx}`, 
+            _id: `ext-${car.id || idx}`,
             isExternal: true,
             name: car.name ? car.name.split(' - ')[0].trim() : 'Unknown',
             brand: car.catalogEntry?.brand?.name || 'External',
@@ -146,11 +146,11 @@ exports.getCar = async (req, res) => {
         const data = await extRes.json();
         const extList = data.vehicles || data.data || data;
         const rawCar = (Array.isArray(extList) ? extList : []).find(c => String(c.id) === extId || String(extList.indexOf(c)) === extId);
-        
+
         if (rawCar) {
           const dailySlab = rawCar.pricingConfig?.slabs?.find(s => s.duration_hours === 24);
           const price = dailySlab ? dailySlab.price : (rawCar.pricePerDay || 0);
-          
+
           const rawFuel = rawCar.catalogVariant?.fuelType || 'Petrol';
           const fuel = rawFuel.charAt(0).toUpperCase() + rawFuel.slice(1);
           const bodyType = rawCar.catalogEntry?.body || 'Standard';

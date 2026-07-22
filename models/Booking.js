@@ -62,17 +62,29 @@ const BookingSchema = new mongoose.Schema(
     bookingStatus: {
       type: String,
       enum: ['Pending', 'Confirmed', 'Active', 'Completed', 'Cancelled'],
-      default: 'Confirmed',
+      default: 'Pending',
     },
     paymentStatus: {
       type: String,
-      enum: ['Pending', 'Paid', 'Refunded'],
-      default: 'Paid',
+      enum: ['Pending', 'Paid', 'Failed', 'Refunded'],
+      default: 'Pending',
     },
     paymentMethod: {
       type: String,
-      enum: ['Credit Card', 'PayPal', 'Bank Transfer'],
-      default: 'Credit Card',
+      enum: ['Credit Card', 'PayPal', 'Bank Transfer', 'PhonePe Gateway', 'PhonePe QR', 'PhonePe UPI'],
+      default: 'PhonePe QR',
+    },
+    merchantTransactionId: {
+      type: String,
+      default: '',
+    },
+    phonepeTransactionId: {
+      type: String,
+      default: '',
+    },
+    paymentDetails: {
+      type: Object,
+      default: {},
     },
     includesInsurance: {
       type: Boolean,

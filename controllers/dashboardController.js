@@ -19,7 +19,7 @@ exports.getStats = async (req, res) => {
       const list = data.vehicles || data.data || data;
       if (Array.isArray(list)) externalCount = list.length
     }
-  } catch {}
+  } catch { }
 
   const [totalUsers, dbCarsCount, totalBookings, bookings] = await Promise.all([
     User.countDocuments({ role: 'user' }),
