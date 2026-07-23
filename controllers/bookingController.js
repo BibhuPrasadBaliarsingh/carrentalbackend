@@ -89,6 +89,19 @@ exports.createBooking = async (req, res) => {
 
     const isInsurance = includesInsurance === true || includesInsurance === 'true'
     const totalDays = Math.max(1, Math.ceil((returnD - pickup) / (1000 * 60 * 60 * 24)))
+
+    // Rental Discount logic: 10% for weekly (7 to 29 days), 15% for monthly (30+ days)
+    let discountPercentage = 0
+    if (totalDays >= 30) {
+      discountPercentage = 15
+    } else if (totalDays >= 7) {
+      discountPercentage = 10
+    }
+
+    const originalSubtotal = car.pricePerDay * totalDays
+    const discountAmount = Math.round((originalSubtotal * discountPercentage) / 100)
+    const rentalSubtotal = originalSubtotal - discountAmount
+
     const insuranceFee = isInsurance ? 50 * totalDays : 0
     let deliveryFee = 0
     if (deliveryMode === 'Doorstep') {
@@ -98,7 +111,7 @@ exports.createBooking = async (req, res) => {
     }
     const settings = await Settings.getSingleton()
     const taxRate = Number(settings.taxRate ?? 0) / 100
-    const subtotal = car.pricePerDay * totalDays + insuranceFee + deliveryFee
+    const subtotal = rentalSubtotal + insuranceFee + deliveryFee
     const taxAmount = Math.round(subtotal * taxRate * 100) / 100
     const totalPrice = subtotal + taxAmount
     const bookingAdvance = 500
@@ -135,6 +148,8 @@ exports.createBooking = async (req, res) => {
       paymentScreenshot: req.files?.paymentScreenshot?.[0]?.filename || '',
       totalDays,
       pricePerDay: car.pricePerDay,
+      discountAmount,
+      discountPercentage,
       insuranceFee,
       deliveryFee,
       taxAmount,
@@ -153,7 +168,7 @@ exports.createBooking = async (req, res) => {
       { path: 'user', select: 'name email' },
     ])
 
-    res.status(201).json({ success: true, booking: populated, taxAmount, taxRate })
+    res.status(201).json({ success: true, booking: populated, taxAmount, taxRate, discountAmount, discountPercentage })
   } catch (err) {
     console.error('Create booking error:', err)
     res.status(500).json({ success: false, message: err.message || 'Failed to create booking' })

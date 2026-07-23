@@ -49,6 +49,14 @@ const BookingSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    discountAmount: {
+      type: Number,
+      default: 0,
+    },
+    discountPercentage: {
+      type: Number,
+      default: 0,
+    },
     insuranceFee: {
       type: Number,
       default: 0,
