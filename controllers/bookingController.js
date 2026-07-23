@@ -9,7 +9,7 @@ const Settings = require('../models/Settings')
 // @access  Public / Private
 exports.createBooking = async (req, res) => {
   try {
-    const { carId, carName, carBrand, carCategory, pricePerDay, carImage, carFuelType, carSeats, carTransmission, pickupDate, returnDate, pickupLocation, deliveryMode, includesInsurance, paymentMethod, drivingLicenseNumber, aadhaarNumber, address, firstName, lastName, email, phone } = req.body
+    const { carId, carName, carBrand, carCategory, pricePerDay, carImage, carFuelType, carSeats, carTransmission, pickupDate, returnDate, pickupLocation, pickupDetails, googleMapsUrl, deliveryMode, includesInsurance, paymentMethod, drivingLicenseNumber, aadhaarNumber, address, firstName, lastName, email, phone } = req.body
 
     // Resolve the image: use carImage from payload if it's a real URL, else fallback
     const PLACEHOLDER = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800'
@@ -90,9 +90,15 @@ exports.createBooking = async (req, res) => {
     const isInsurance = includesInsurance === true || includesInsurance === 'true'
     const totalDays = Math.max(1, Math.ceil((returnD - pickup) / (1000 * 60 * 60 * 24)))
     const insuranceFee = isInsurance ? 50 * totalDays : 0
+    let deliveryFee = 0
+    if (deliveryMode === 'Doorstep') {
+      deliveryFee = 250
+    } else if (deliveryMode === 'Airport') {
+      deliveryFee = 250
+    }
     const settings = await Settings.getSingleton()
-    const taxRate = Number(settings.taxRate || 8) / 100
-    const subtotal = car.pricePerDay * totalDays + insuranceFee
+    const taxRate = Number(settings.taxRate ?? 0) / 100
+    const subtotal = car.pricePerDay * totalDays + insuranceFee + deliveryFee
     const taxAmount = Math.round(subtotal * taxRate * 100) / 100
     const totalPrice = subtotal + taxAmount
 
@@ -115,6 +121,8 @@ exports.createBooking = async (req, res) => {
       pickupDate: pickup,
       returnDate: returnD,
       pickupLocation: pickupLocation || 'Main Office',
+      pickupDetails: pickupDetails || '',
+      googleMapsUrl: googleMapsUrl || '',
       deliveryMode: deliveryMode || 'Parking',
       drivingLicenseNumber: drivingLicenseNumber || '',
       aadhaarNumber: aadhaarNumber || '',
@@ -125,6 +133,7 @@ exports.createBooking = async (req, res) => {
       totalDays,
       pricePerDay: car.pricePerDay,
       insuranceFee,
+      deliveryFee,
       taxAmount,
       totalPrice,
       includesInsurance: isInsurance,

@@ -25,6 +25,8 @@ const BookingSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide a pickup location'],
     },
+    pickupDetails: { type: String, default: '' },
+    googleMapsUrl: { type: String, default: '' },
     drivingLicenseNumber: { type: String, default: '' },
     aadhaarNumber: { type: String, default: '' },
     address: { type: String, default: '' },
@@ -48,6 +50,10 @@ const BookingSchema = new mongoose.Schema(
       required: true,
     },
     insuranceFee: {
+      type: Number,
+      default: 0,
+    },
+    deliveryFee: {
       type: Number,
       default: 0,
     },

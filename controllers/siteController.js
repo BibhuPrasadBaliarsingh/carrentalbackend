@@ -37,7 +37,7 @@ exports.getPublicSettings = async (req, res) => {
         platformName: settings?.platformName || 'SpeedToyz Cars',
         supportEmail: settings?.supportEmail || 'support@speedtoyz.com',
         currency: settings?.currency || 'INR (₹)',
-        taxRate: settings?.taxRate || 8,
+        taxRate: settings?.taxRate ?? 0,
       },
     })
   } catch (err) {
@@ -47,7 +47,7 @@ exports.getPublicSettings = async (req, res) => {
         platformName: 'SpeedToyz Cars',
         supportEmail: 'support@speedtoyz.com',
         currency: 'INR (₹)',
-        taxRate: 8,
+        taxRate: 0,
       },
     })
   }

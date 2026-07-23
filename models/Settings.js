@@ -4,7 +4,7 @@ const DEFAULT_SETTINGS = {
   platformName: 'SpeedToyz Cars',
   supportEmail: 'support@speedtoyz.com',
   currency: 'INR (₹)',
-  taxRate: 8,
+  taxRate: 0,
   brands: ['Ferrari', 'Mercedes', 'Land Rover', 'Porsche', 'BMW', 'Tesla', 'Lamborghini', 'Audi', 'McLaren', 'Maruti'],
   categories: ['Sports', 'Luxury', 'SUV', 'Electric', 'Supercar', 'Hatchback', 'Sedan'],
 }
@@ -13,7 +13,7 @@ const SettingsSchema = new mongoose.Schema({
   platformName: { type: String, default: 'SpeedToyz Cars' },
   supportEmail: { type: String, default: 'support@speedtoyz.com' },
   currency: { type: String, default: 'INR (₹)' },
-  taxRate: { type: Number, default: 8 },
+  taxRate: { type: Number, default: 0 },
   brands: {
     type: [String],
     default: ['Ferrari', 'Mercedes', 'Land Rover', 'Porsche', 'BMW', 'Tesla', 'Lamborghini', 'Audi', 'McLaren', 'Maruti'],
