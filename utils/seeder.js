@@ -132,7 +132,7 @@ const seed = async () => {
       email: 'john@example.com',
       password: 'User@123',
       role: 'user',
-      phone: '+1 555-123-4567',
+      phone: '9861332857',
     })
   }
 
