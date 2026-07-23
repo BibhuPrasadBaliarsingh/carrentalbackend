@@ -101,6 +101,9 @@ exports.createBooking = async (req, res) => {
     const subtotal = car.pricePerDay * totalDays + insuranceFee + deliveryFee
     const taxAmount = Math.round(subtotal * taxRate * 100) / 100
     const totalPrice = subtotal + taxAmount
+    const bookingAdvance = 500
+    const advancePaid = bookingAdvance + deliveryFee
+    const remainingAmount = Math.max(0, totalPrice - advancePaid)
 
     const overlappingBooking = await Booking.findOne({
       car: car._id,
@@ -136,6 +139,9 @@ exports.createBooking = async (req, res) => {
       deliveryFee,
       taxAmount,
       totalPrice,
+      bookingAdvance,
+      advancePaid,
+      remainingAmount,
       includesInsurance: isInsurance,
       paymentMethod: paymentMethod || 'Bank Transfer',
       bookingStatus: 'Pending',

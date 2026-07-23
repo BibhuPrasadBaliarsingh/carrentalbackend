@@ -49,7 +49,9 @@ exports.initiatePayment = async (req, res) => {
 
     const merchantTransactionId = `MT${Date.now()}${Math.floor(1000 + Math.random() * 9000)}`
     const bookingRef = booking?.bookingRef || `BK${merchantTransactionId.slice(-6)}`
-    const paymentAmountPaise = Math.round(Number(amount || booking?.totalPrice || 1000) * 100)
+    const defaultAdvance = booking?.advancePaid || (500 + (booking?.deliveryFee || 0))
+    const payAmount = Number(amount || defaultAdvance)
+    const paymentAmountPaise = Math.round(payAmount * 100)
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
     const redirectUrl = returnUrl || `${clientUrl}/my-bookings?ref=${bookingRef}&txnId=${merchantTransactionId}`
     const callbackUrl = process.env.PHONEPE_WEBHOOK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payment/phonepe/webhook`
@@ -106,7 +108,7 @@ exports.initiatePayment = async (req, res) => {
     }
 
     // Construct PhonePe UPI Deep Link for direct scanner / UPI App pay
-    const upiUri = `upi://pay?pa=speedtoyz@upi&pn=${encodeURIComponent('SpeedToyz Cars')}&tr=${merchantTransactionId}&am=${amount || booking?.totalPrice || 1000}&cu=INR&tn=${encodeURIComponent('Car Rental Advance #' + bookingRef)}`
+    const upiUri = `upi://pay?pa=speedtoyz@upi&pn=${encodeURIComponent('SpeedToyz Cars')}&tr=${merchantTransactionId}&am=${payAmount}&cu=INR&tn=${encodeURIComponent('Car Rental Advance #' + bookingRef)}`
 
     res.status(200).json({
       success: true,
@@ -117,7 +119,7 @@ exports.initiatePayment = async (req, res) => {
       isSimulated,
       terminalId: 'Terminal 1-Q552469227',
       merchantId: PHONEPE_MERCHANT_ID,
-      amount: amount || booking?.totalPrice,
+      amount: payAmount,
     })
   } catch (err) {
     console.error('PhonePe initiate error:', err)

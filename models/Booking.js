@@ -65,6 +65,18 @@ const BookingSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    bookingAdvance: {
+      type: Number,
+      default: 500,
+    },
+    advancePaid: {
+      type: Number,
+      default: 500,
+    },
+    remainingAmount: {
+      type: Number,
+      default: 0,
+    },
     bookingStatus: {
       type: String,
       enum: ['Pending', 'Confirmed', 'Active', 'Completed', 'Cancelled'],
