@@ -183,6 +183,9 @@ exports.createBooking = async (req, res) => {
 // @access  Private
 exports.getMyBookings = async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(200).json({ success: true, bookings: [] })
+    }
     const userId = req.user.id || req.user._id
     const userEmail = req.user.email ? req.user.email.trim().toLowerCase() : ''
     const userPhone = req.user.phone ? req.user.phone.trim() : ''
@@ -208,6 +211,9 @@ exports.getMyBookings = async (req, res) => {
 // @access  Admin
 exports.getAllBookings = async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(200).json({ success: true, total: 0, bookings: [] })
+    }
     const { status, page = 1, limit = 500 } = req.query
     const query = status ? { bookingStatus: status } : {}
 

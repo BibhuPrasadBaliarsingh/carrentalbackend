@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const User = require('../models/User')
 const Booking = require('../models/Booking')
 
@@ -6,6 +7,9 @@ const Booking = require('../models/Booking')
 // @access  Admin
 exports.getUsers = async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(200).json({ success: true, total: 0, users: [] })
+    }
     const { search, role, page = 1, limit = 500 } = req.query
     const query = {}
     if (search) {

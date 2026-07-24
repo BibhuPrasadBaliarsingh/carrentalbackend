@@ -1,10 +1,8 @@
+const mongoose = require('mongoose')
 const User = require('../models/User')
 const Car = require('../models/Car')
 const Booking = require('../models/Booking')
 
-// @desc    Get dashboard stats
-// @route   GET /api/dashboard/stats
-// @access  Admin
 // @desc    Get dashboard stats
 // @route   GET /api/dashboard/stats
 // @access  Admin
@@ -21,16 +19,32 @@ exports.getStats = async (req, res) => {
     }
   } catch { }
 
-  const [totalUsers, dbCarsCount, totalBookings, bookings] = await Promise.all([
-    User.countDocuments({ role: 'user' }),
-    Car.countDocuments(),
-    Booking.countDocuments(),
-    Booking.find({ bookingStatus: { $ne: 'Cancelled' } }),
-  ])
+  let totalUsers = 0
+  let dbCarsCount = 0
+  let totalBookings = 0
+  let bookings = []
+  let dbActive = 0
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const resArr = await Promise.all([
+        User.countDocuments({ role: 'user' }),
+        Car.countDocuments(),
+        Booking.countDocuments(),
+        Booking.find({ bookingStatus: { $ne: 'Cancelled' } }),
+      ])
+      totalUsers = resArr[0]
+      dbCarsCount = resArr[1]
+      totalBookings = resArr[2]
+      bookings = resArr[3]
+      dbActive = await Car.countDocuments({ available: true })
+    } catch (err) {
+      console.warn('Dashboard DB query skipped:', err.message)
+    }
+  }
 
   const totalCars = dbCarsCount + externalCount
-  const revenue = bookings.reduce((sum, b) => sum + b.totalPrice, 0)
-  const dbActive = await Car.countDocuments({ available: true })
+  const revenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0)
   const activeCars = dbActive + externalCount
 
   // Revenue by month (last 7 months)
